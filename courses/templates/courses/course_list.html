@@ -1,0 +1,14 @@
+<h2>All Courses</h2>
+{% for course in courses %}
+  <div>
+    <h3>{{ course.title }}</h3>
+    <p>{{ course.description }}</p>
+    {% if user.role == "student" %}
+      <a href="{% url 'enroll_course' course.id %}">Enroll</a>
+    {% endif %}
+  </div>
+{% endfor %}
+
+{% if user.role == "instructor" %}
+  <a href="{% url 'create_course' %}">Create New Course</a>
+{% endif %}
