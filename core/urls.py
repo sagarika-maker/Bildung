@@ -17,9 +17,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from django.http import HttpResponse
-from users import views as user_views
-from users.views import CustomLoginView
-from django.contrib.auth import views as auth_views
+from home import views as home_views
 
 # Fallback view for the main domain
 def home(request):
@@ -29,8 +27,16 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path("forums/", include("forums.urls")),
     path("chat/", include("chat.urls")),
-    path("", home),  # main domain root
-    path('signup/', user_views.signup_view, name='signup'),
-    path('login/', auth_views.LoginView.as_view(template_name='users/login.html'), name='login'),
-    path('logout/', auth_views.LogoutView.as_view(next_page='/login/'), name='logout'),
+
+    # Main site root
+    path('', home_views.guest_home, name='guest_home'),
+
+    # Include all user-related routes (signup, login, dashboards)
+    path("", include("users.urls")),
+    path('', include('courses.urls')),
 ]
+
+SUBDOMAIN_URLCONFS = {
+    'instructor': 'courses.instructor_urls',
+    'student': 'courses.student_urls',  # you'll create later
+}
