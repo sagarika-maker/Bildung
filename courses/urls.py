@@ -1,20 +1,24 @@
-# core/urls.py
-from django.contrib import admin
-from django.urls import path, include
-from django.contrib.auth import views as auth_views
-from django.http import HttpResponse
-
-def home(request):
-    return HttpResponse("Main Site - Bildung")
+from django.urls import path
+from . import views
+from users import views as user_views
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('forums/', include('forums.urls')),
-    path('chat/', include('chat.urls')),
+    path('', views.course_list, name='course_list'),
+    path('create/', views.create_course, name='create_course'),
+    path('<int:course_id>/', views.course_detail, name='course_detail'),
+    path('<int:course_id>/add-lecture/', views.add_lecture, name='add_lecture'),
+    path('<int:course_id>/enroll/', views.enroll_course, name='enroll_course'),
+    path('lecture/<int:lecture_id>/complete/', views.mark_lecture_complete, name='mark_lecture_complete'),
+    path('<int:course_id>/progress-report/', views.course_progress_report, name='course_progress_report'),
+    path('<int:course_id>/feedback/', views.give_feedback, name='give_feedback'),
 
-    # Login/logout for all users
-    path('login/', auth_views.LoginView.as_view(template_name='login.html'), name='login'),
-    path('logout/', auth_views.LogoutView.as_view(next_page='/'), name='logout'),
+    # New for events
+    path('<int:course_id>/add-event/', views.add_event, name='add_event'),
 
-    path('', home),
+    path('lecture/<int:lecture_id>/complete/', views.mark_lecture_complete, name='mark_lecture_complete'),
+    path('student/dashboard/', user_views.student_dashboard, name='student_dashboard'),
+    path('student/courses/', views.browse_courses, name='browse_courses'),
+    path('student/enroll/<int:course_id>/', views.enroll_in_course, name='enroll_in_course'),
+    path('student/course/<int:course_id>/', views.student_course_detail, name='student_course_detail'),
 ]
+
