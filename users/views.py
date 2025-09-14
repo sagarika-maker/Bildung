@@ -2,116 +2,104 @@ from django.shortcuts import render, redirect
 from django.contrib.auth import login, authenticate, logout
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.views import LoginView
+from django.contrib.auth.forms import AuthenticationForm
 
-from .forms import SignUpForm
+from .forms import StudentSignUpForm, InstructorSignUpForm
 from courses.models import Course
 
-from django.shortcuts import redirect
-from django.contrib.auth import login, authenticate
-from django.contrib import messages
 
-def custom_login(request):
+# --- Auth Landing Page (just options, no forms) ---
+def auth_page(request):
+    return render(request, "users/auth_page.html")
+
+
+# --- Student Signup ---
+def student_signup(request):
     if request.method == "POST":
-        username = request.POST.get("username")
-        password = request.POST.get("password")
-        user = authenticate(request, username=username, password=password)
-        if user is not None:
+        form = StudentSignUpForm(request.POST)
+        if form.is_valid():
+            user = form.save(commit=False)
+            user.role = "student"
+            user.save()
             login(request, user)
-            # Redirect based on role
+            return redirect("student_dashboard")
+    else:
+        form = StudentSignUpForm()
+    return render(request, "users/student_signup.html", {"form": form})
+
+
+# --- Instructor Signup ---
+def instructor_signup(request):
+    if request.method == "POST":
+        form = InstructorSignUpForm(request.POST)
+        if form.is_valid():
+            user = form.save(commit=False)
+            user.role = "instructor"
+            user.save()
+            login(request, user)
+            return redirect("instructor_dashboard")
+    else:
+        form = InstructorSignUpForm()
+    return render(request, "users/instructor_signup.html", {"form": form})
+
+
+# --- Student Login ---
+def student_login(request):
+    if request.method == "POST":
+        form = AuthenticationForm(request, data=request.POST)
+        if form.is_valid():
+            user = form.get_user()
             if user.role == "student":
+                login(request, user)
                 return redirect("student_dashboard")
-            elif user.role == "instructor":
+            else:
+                messages.error(request, "This login is only for students.")
+    else:
+        form = AuthenticationForm()
+    return render(request, "users/student_login.html", {"form": form})
+
+
+# --- Instructor Login ---
+def instructor_login(request):
+    if request.method == "POST":
+        form = AuthenticationForm(request, data=request.POST)
+        if form.is_valid():
+            user = form.get_user()
+            if user.role == "instructor":
+                login(request, user)
                 return redirect("instructor_dashboard")
             else:
-                return redirect("admin_dashboard")
-        else:
-            messages.error(request, "Invalid username or password.")
-    return render(request, "users/login.html")
-
-
-# --- Signup ---
-def signup_view(request):
-    if request.method == 'POST':
-        form = SignUpForm(request.POST)
-        if form.is_valid():
-            user = form.save()
-            login(request, user)  # log in the user after signup
-
-            # redirect based on role
-            if user.role == 'student':
-                return redirect('student_dashboard')
-            elif user.role == 'instructor':
-                return redirect('instructor_dashboard')
-            else:
-                return redirect('admin_dashboard')
+                messages.error(request, "This login is only for instructors.")
     else:
-        form = SignUpForm()
-    return render(request, 'users/registration/signup.html', {'form': form})
+        form = AuthenticationForm()
+    return render(request, "users/instructor_login.html", {"form": form})
 
 
-# --- Login ---
-class CustomLoginView(LoginView):
-    template_name = "users/registration/login.html"
-
-    def get_success_url(self):
-        user = self.request.user
-        if user.role == 'student':
-            return "http://student.lvh.me:8000/"
-        elif user.role == 'instructor':
-            return "http://instructor.lvh.me:8000/"
-        else:
-            return "http://admin.lvh.me:8000/"
-
-
-# --- Logout ---
+# --- Logout (works for all roles) ---
 def logout_view(request):
     logout(request)
-    return redirect("login")
+    return redirect("auth_page")
 
 
 # --- Dashboards ---
-def dashboard_view(request):
-    if not request.user.is_authenticated:
-        return redirect("login")
-
-    if request.user.role == "student":
-        return redirect("student_dashboard")
-    elif request.user.role == "instructor":
-        return redirect("instructor_dashboard")
-    elif request.user.role == "admin":
-        return redirect("admin_dashboard")
-
-
-@login_required(login_url='/login/')
+@login_required(login_url="/auth/")
 def student_dashboard(request):
-    if request.user.role != 'student':
-        return redirect('login')
-
+    if request.user.role != "student":
+        return redirect("auth_page")
     enrolled_courses = Course.objects.filter(enrollments__student=request.user)
-    return render(request, 'courses/student_dashboard.html', {'enrolled_courses': enrolled_courses})
+    return render(request, "courses/student_dashboard.html", {"enrolled_courses": enrolled_courses})
 
 
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
-#from .models import Course
-#from .forms import CourseForm
-
-@login_required(login_url='/login/')
+@login_required(login_url="/auth/")
 def instructor_dashboard(request):
-    if request.user.role != 'instructor':
-        return redirect('login')
-
+    if request.user.role != "instructor":
+        return redirect("auth_page")
     courses = Course.objects.filter(instructor=request.user)
-    return render(request, 'courses/instructor_dashboard.html', {
-        'courses': courses
-    })
+    return render(request, "courses/instructor_dashboard.html", {"courses": courses})
 
 
-@login_required(login_url='/login/')
+@login_required(login_url="/auth/")
 def admin_dashboard(request):
-    if request.user.role != 'admin':
-        return redirect('login')
-
-    return render(request, 'admin/dashboard.html')
-
+    if request.user.role != "admin":
+        return redirect("auth_page")
+    return render(request, "admin/dashboard.html")
