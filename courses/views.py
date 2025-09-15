@@ -241,9 +241,7 @@ def mark_lecture_complete(request, lecture_id):
     )
     return redirect('student_course_detail', course_id=lecture.course.id)
 
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
-from .models import Course
+
 
 @login_required(login_url='/login/')
 def browse_courses(request):
