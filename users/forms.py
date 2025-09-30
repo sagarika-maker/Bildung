@@ -27,3 +27,17 @@ class InstructorSignUpForm(UserCreationForm):
         if commit:
             user.save()
         return user
+    
+
+    remember_me = forms.BooleanField(required=False, label="Remember me")
+    class Meta:
+      model = User
+      fields = ['username', 'password1', 'password2']
+      
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        user.role = "instructor"
+        if commit:
+            user.save()
+        return user  
